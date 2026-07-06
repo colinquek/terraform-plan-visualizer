@@ -98,3 +98,4 @@ plan.json
 
 # Docker
 .dockerignore
+**/diag.html

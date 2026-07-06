@@ -305,19 +305,11 @@ func generateHtml(planData interface{}) string {
             <div class="collapsible collapsed" onclick="toggleCollapsible(this)">
             <div class="section-header-row">
                     <h2>Resource Drift (` + fmt.Sprintf("%d", driftCount) + ` total)</h2>
-                    <p class="section-description">Terraform will update these resources to match your configuration</p>
+                    <p class="section-description">Resources that changed outside Terraform - will be updated to match configuration</p>
                 </div>
             </div>
             <div class="collapsible-content collapsed">
-                <div style="text-align: center; padding: 40px 20px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="color: #2c3e50; margin-bottom: 15px;">Want to see detailed drift information?</h3>
-                    <p style="color: #6c757d; margin-bottom: 20px; font-size: 16px;">
-                        Get comprehensive drift analysis, cost estimates, and advanced Terraform insights with CloudVIC.
-                    </p>
-                    <a href="https://cloudvic.com" style="display: inline-block; background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; transition: background-color 0.3s;">
-                        Subscribe to CloudVIC
-                    </a>
-                </div>
+                ` + generateDriftHtml(planMap, resourceChanges) + `
             </div>
         </div>
     </div>
@@ -820,6 +812,97 @@ func isJSONString(s string) bool {
 	trimmed := strings.TrimSpace(s)
 	return (strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")) ||
 		(strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]"))
+}
+
+func generateDriftHtml(planMap map[string]interface{}, resourceChanges []map[string]interface{}) string {
+	// Collect addresses that are part of replace operations (should be excluded from drift display)
+	var replaceAddresses []string
+	for _, change := range resourceChanges {
+		if _, isReplace := change["_is_replace"]; isReplace {
+			replaceAddresses = append(replaceAddresses, getString(change, "address"))
+		}
+	}
+
+	// Extract drift changes
+	var driftChanges []map[string]interface{}
+	if resourceDrift, ok := planMap["resource_drift"].([]interface{}); ok {
+		for _, drift := range resourceDrift {
+			if driftMap, ok := drift.(map[string]interface{}); ok {
+				address := getString(driftMap, "address")
+				// Skip if this is part of a replace operation
+				if contains(replaceAddresses, address) {
+					continue
+				}
+				driftChanges = append(driftChanges, driftMap)
+			}
+		}
+	}
+
+	if len(driftChanges) == 0 {
+		return "<p>No resource drift detected.</p>"
+	}
+
+	var html strings.Builder
+	html.WriteString("<div>")
+
+	for _, drift := range driftChanges {
+		address := getString(drift, "address")
+		actions := getActions(drift)
+
+		// Get drift details (before/after comparison)
+		driftDetails := getDriftDetails(drift)
+
+		html.WriteString(fmt.Sprintf(`
+			<div class="resource-item drift">
+				<div class="collapsible" onclick="toggleCollapsible(this)">
+					<div>%s</div>
+					<div class="resource-address">%s</div>
+				</div>
+				<div class="collapsible-content">
+					<div class="resource-attributes">
+						%s
+					</div>
+				</div>
+			</div>`,
+			formatActions(actions),
+			address,
+			driftDetails))
+	}
+
+	html.WriteString("</div>")
+	return html.String()
+}
+
+func getDriftDetails(drift map[string]interface{}) string {
+	var details strings.Builder
+
+	if changeData, ok := drift["change"].(map[string]interface{}); ok {
+		// For drift, show what changed in the real infrastructure vs state
+		before, beforeOk := changeData["before"].(map[string]interface{})
+		after, afterOk := changeData["after"].(map[string]interface{})
+
+		if beforeOk && afterOk {
+			changedFields := getChangedFields(before, after)
+			if len(changedFields) > 0 {
+				details.WriteString("<div class='attribute-item'><span class='attribute-key'>Drift Detected:</span></div>")
+				details.WriteString("<div class='diff-container'>")
+				
+				details.WriteString("<div class='diff-column'>")
+				details.WriteString("<div class='diff-header'>State (Before)</div>")
+				details.WriteString(formatChangedFields(changedFields, before, "attribute-removed"))
+				details.WriteString("</div>")
+
+				details.WriteString("<div class='diff-column'>")
+				details.WriteString("<div class='diff-header'>Actual (After)</div>")
+				details.WriteString(formatChangedFields(changedFields, after, "attribute-added"))
+				details.WriteString("</div>")
+				
+				details.WriteString("</div>")
+			}
+		}
+	}
+
+	return details.String()
 }
 
 func generateErrorHtml(message string) string {
