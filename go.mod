@@ -1,3 +1,3 @@
 module cloudvic-tf-plan-viz
 
-go 1.25.3
+go 1.26.4
