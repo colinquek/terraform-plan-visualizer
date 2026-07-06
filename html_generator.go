@@ -254,7 +254,7 @@ func generateHtml(planData interface{}) string {
             content.classList.toggle('collapsed');
         }
         
-        // Make individual resource items collapsed by default, but keep main sections open
+        // Keep all sections and resource items expanded by default
         document.addEventListener('DOMContentLoaded', function() {
             const collapsibles = document.querySelectorAll('.collapsible');
             collapsibles.forEach(function(element) {
@@ -262,11 +262,11 @@ func generateHtml(planData interface{}) string {
                 const isMainSection = element.querySelector('h2') !== null;
                 
                 if (!isMainSection) {
-                    // Only collapse individual resource items, not main sections
-                    element.classList.add('collapsed');
+                    // Keep individual resource items expanded
+                    element.classList.remove('collapsed');
                     const content = element.nextElementSibling;
                     if (content) {
-                        content.classList.add('collapsed');
+                        content.classList.remove('collapsed');
                     }
                 } else {
                     // Check if main section has no resource items
@@ -277,6 +277,13 @@ func generateHtml(planData interface{}) string {
                         const content = element.nextElementSibling;
                         if (content) {
                             content.classList.add('collapsed');
+                        }
+                    } else {
+                        // Keep main sections with content expanded
+                        element.classList.remove('collapsed');
+                        const content = element.nextElementSibling;
+                        if (content) {
+                            content.classList.remove('collapsed');
                         }
                     }
                 }
@@ -302,20 +309,19 @@ func generateHtml(planData interface{}) string {
         </div>
         
         <div class="section">
-            <div class="collapsible collapsed" onclick="toggleCollapsible(this)">
+            <div class="collapsible" onclick="toggleCollapsible(this)">
             <div class="section-header-row">
                     <h2>Resource Drift (` + fmt.Sprintf("%d", driftCount) + ` total)</h2>
                     <p class="section-description">Resources that changed outside Terraform - will be updated to match configuration</p>
                 </div>
             </div>
-            <div class="collapsible-content collapsed">
+            <div class="collapsible-content">
                 ` + generateDriftHtml(planMap, resourceChanges) + `
             </div>
         </div>
     </div>
-    <div class="promo-message">
-        Want to visualize your Terraform plan and state changes over time and link them to your git history?<br>
-        <a href="https://cloudvic.com" class="promo-link">Try CloudVIC</a>
+    <div class="promo-message" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <span style="color: #7f8c8d; font-size: 14px;">Version: v1.0.2.06jul</span>
     </div>
 </body>
 </html>`
