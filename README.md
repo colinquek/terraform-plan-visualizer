@@ -2,6 +2,8 @@
 
 A free, open source Terraform plan visualization tool that converts Terraform plan JSON files into succinct, interactive HTML pages. Perfect for sharing plan results in CI/CD pipelines, pull requests, and team collaboration.
 
+**Current Version:** v1.0.2.06jul
+
 ![Terraform Plan Visualizer Example](examples/example-screenshot.png)
 
 ## Quick Start
@@ -107,6 +109,13 @@ Options:
   -h, -help               Show help information
   -v, -version            Show version information
 ```
+
+### Features
+
+- **Resource Changes**: Displays create, update, delete, and replace operations with before/after diffs
+- **Resource Drift**: Shows infrastructure drift detected between state and actual cloud resources
+- **Interactive HTML**: Collapsible sections, syntax-highlighted attributes, side-by-side diffs
+- **CI/CD Ready**: Generates self-contained HTML files suitable for pipeline artifacts
 
 ### Examples
 

@@ -39,7 +39,8 @@ Terraform Plan JSON → [main.go] → [html_generator.go] → Interactive HTML
 - **Create** (green) - New resources being added
 - **Update** (orange) - Existing resources being modified
 - **Delete** (red) - Resources being removed
-- **Drift Detection** - Resources that changed outside Terraform
+- **Replace** (gradient red-green) - Resources being recreated
+- **Drift Detection** (orange) - Resources that changed outside Terraform, shown with before/after diffs
 
 ### 3. Distribution Methods
 - **Binary:** Static Go binary (no runtime dependencies)
@@ -109,13 +110,18 @@ go test ./...
 - `processPlanFile()` - Reads JSON, parses, generates HTML
 - `readJSONFile()` - File I/O for JSON input
 - `writeHtmlFile()` - File I/O for HTML output
+- `showVersionInfo()` - Displays version, build time, git commit
+- `showHelpInfo()` - Shows usage help and examples
 
 ### html_generator.go
 - `generateHtml()` - Main HTML generation with embedded CSS/JS
 - `extractResourceChanges()` - Parses Terraform plan JSON structure
-- `countDriftChanges()` - Detects resources with drift
+- `countDriftChanges()` - Detects resources with drift (excludes replace operations)
 - `generateResourceChangesHtml()` - Renders resource change sections
-- `getActionClass()` - Maps actions (create/update/delete) to CSS classes
+- `generateDriftHtml()` - Renders drift detection section with before/after diffs
+- `getDriftDetails()` - Generates side-by-side diff for drifted resources
+- `getChangeDetails()` - Shows before/after attribute changes for updates
+- `getActionClass()` - Maps actions (create/update/delete/replace) to CSS classes
 - `formatChangedFields()` - Shows before/after attribute changes
 
 ## Terraform Plan JSON Structure
