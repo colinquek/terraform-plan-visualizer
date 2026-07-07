@@ -894,12 +894,12 @@ func getDriftDetails(drift map[string]interface{}) string {
 				details.WriteString("<div class='diff-container'>")
 				
 				details.WriteString("<div class='diff-column'>")
-				details.WriteString("<div class='diff-header'>State (Before)</div>")
+				details.WriteString("<div class='diff-header'>Current State</div>")
 				details.WriteString(formatChangedFields(changedFields, before, "attribute-removed"))
 				details.WriteString("</div>")
 
 				details.WriteString("<div class='diff-column'>")
-				details.WriteString("<div class='diff-header'>Actual (After)</div>")
+				details.WriteString("<div class='diff-header'>To-be State</div>")
 				details.WriteString(formatChangedFields(changedFields, after, "attribute-added"))
 				details.WriteString("</div>")
 				
