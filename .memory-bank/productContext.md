@@ -1,41 +1,40 @@
-# Product Context
+## Product Context
 
-## Problem Statement
-Terraform plan output is verbose and difficult to review, especially in CI/CD pipelines where stakeholders need to quickly understand infrastructure changes.
+### Problem Statement
+Terraform plan output in CI/CD pipelines is difficult to read and share:
+- Raw JSON is verbose and hard to parse visually
+- Terminal output gets truncated in PR comments
+- Team members need clear visibility into infrastructure changes
+- Security/compliance teams require audit-friendly formats
 
-## Solution
-An automated visualization tool that:
-- Parses Terraform plan JSON (from `terraform show -json`)
-- Generates interactive HTML reports
-- Highlights changes with color coding (green=create, orange=update, red=delete)
-- Provides collapsible sections for easy navigation
+### Solution
+Generate interactive HTML visualizations that:
+- Show resource changes at a glance with color coding
+- Provide collapsible sections for detailed attribute diffs
+- Work as standalone files (no external dependencies)
+- Integrate seamlessly into existing CI/CD workflows
 
-## User Experience Goals
-1. **Clarity**: Anyone can understand what changes Terraform will make
-2. **Speed**: Quick visual scan to identify critical changes
-3. **Collaboration**: Shareable HTML reports for team review
-4. **Integration**: Seamless CI/CD pipeline integration
+### Target Users
+1. **DevOps Engineers**: Sharing plan results in pull requests
+2. **Security Teams**: Reviewing infrastructure changes
+3. **Platform Teams**: Building internal Terraform workflows
+4. **Consultants**: Delivering client-ready plan documentation
 
-## Target Users
-- DevOps engineers reviewing infrastructure changes
-- Security teams auditing Terraform plans
-- Management stakeholders approving deployments
-- CI/CD pipelines generating artifacts
+### User Experience Goals
+- **Zero Configuration**: Run with single command, get working HTML
+- **Self-Contained**: No external CSS/JS dependencies
+- **Fast**: Minimal processing overhead
+- **Clear Visual Hierarchy**: Color-coded actions, collapsible details
+- **CI/CD Ready**: Artifact-friendly output format
 
-## Use Cases
-1. **CI/CD Pipeline Artifact**: Generate HTML report on every PR
-2. **Manual Review**: Convert saved plan files to visual format
-3. **Audit Trail**: Archive HTML reports for compliance
-4. **Drift Detection**: Visualize resources changed outside Terraform
+### Success Metrics
+- Time to generate visualization < 5 seconds for typical plans
+- HTML file size reasonable for artifact storage
+- All resource change types accurately represented
+- Works with standard Terraform JSON output (no custom formatting)
 
-## Success Metrics
-- Time to review Terraform plans reduced by 50%
-- Increased stakeholder confidence in infrastructure changes
-- Reduced deployment errors from misunderstood plans
-- Easy integration with existing GitLab/GitHub workflows
-
-## Design Principles
-- **Simplicity**: Zero external dependencies
-- **Portability**: Static binary, Docker, GitHub Action
-- **Compatibility**: Handle all Terraform providers and plan structures
-- **Performance**: Fast generation even for large plans
+### Design Principles
+- **Simplicity**: Single binary, minimal flags
+- **Portability**: Works across platforms via Docker/binary
+- **Clarity**: Visual design prioritizes readability
+- **Open Source**: Free to use, modify, distribute

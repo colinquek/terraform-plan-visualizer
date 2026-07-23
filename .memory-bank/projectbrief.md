@@ -1,45 +1,43 @@
-# Project Brief: Terraform Plan Visualizer
+## Project Brief
 
-## Project Overview
-A Go-based CLI tool that converts Terraform plan JSON files into interactive HTML visualizations for CI/CD pipelines and team collaboration.
+### Project Name
+Terraform Plan Visualizer
 
-## Core Purpose
-Transform complex Terraform plan output into human-readable, interactive HTML reports that show:
-- Resource changes (create, update, delete)
-- Drift detection
-- Before/after attribute comparisons
+### Purpose
+Convert Terraform plan JSON files into interactive, self-contained HTML visualizations for CI/CD pipelines, pull requests, and team collaboration.
 
-## Distribution Methods
-1. **Static Binary** - Cross-platform Go binary (no runtime dependencies)
-2. **Docker Image** - Multi-stage build (~15MB final image)
-3. **GitHub Action** - `cloudvic-org/terraform-plan-visualizer@v1`
+### Core Requirements
+- Parse `terraform show -json` output format
+- Generate standalone HTML with embedded CSS/JavaScript
+- Visualize resource changes: create, update, delete, replace
+- Display infrastructure drift with before/after diffs
+- Support multiple distribution methods: binary, Docker, GitHub Action
 
-## Technical Foundation
-- **Language**: Go 1.26.4 (upgraded from 1.25.3)
+### Distribution Targets
+1. **Static Binary**: Go-based, no runtime dependencies
+2. **Docker Image**: Multi-stage build (Alpine-based)
+3. **GitHub Action**: Reusable workflow action
+
+### Technical Stack
+- **Language**: Go (currently 1.26.4, upgrading from 1.25.3)
 - **Build**: Static compilation with CGO disabled
-- **Dependencies**: Zero external dependencies (standard library only)
-- **License**: Open source
+- **Base Image**: Alpine 3.18
+- **Module**: cloudvic-tf-plan-viz
 
-## Key Files
-- `main.go` - CLI entry point, flag parsing, validation
-- `html_generator.go` - Terraform plan JSON parsing and HTML generation
-- `Dockerfile` - Multi-stage Docker build
-- `action.yml` - GitHub Action definition
-- `go.mod` - Go module definition (Go 1.26.4)
+### Key Files
+- `main.go`: CLI entry point, flag parsing, validation
+- `html_generator.go`: HTML generation, resource extraction
+- `Dockerfile`: Multi-stage container build
+- `action.yml`: GitHub Action definition
+- `entrypoint.sh`: GitHub Action entrypoint
 
-## Project Goals
-1. Generate clear, interactive visualizations from Terraform plans
-2. Support all Terraform providers and plan structures
-3. Integrate seamlessly into CI/CD pipelines
-4. Maintain zero external dependencies for reliability
+### Current Status
+- Version: v1.0.2.06jul
+- Go version being upgraded to 1.26.4
+- Docker and build files already updated to 1.26.4
 
-## Current Status
-- ✅ Go version upgraded to 1.26.4
-- ⏳ Code understanding phase for recoding
-- 📝 Memory Bank documentation being created
-
-## Agent Files Configuration
-Agent directories (`.agents/`, `.claude/`, `.memory-bank/`, etc.) are:
-- ✅ Tracked in git for team collaboration
-- ✅ Excluded from Docker builds via `.dockerignore`
-- ✅ NOT in `.gitignore` (must stay in git)
+### Goals
+- Maintain backward compatibility with existing Terraform plan JSON formats
+- Keep binary size minimal through static compilation flags
+- Support all major Terraform providers
+- Enable easy CI/CD integration

@@ -1,57 +1,38 @@
-# Active Context
+## Active Context
 
-## Current Work Focus
-**Go Version Upgrade**: Completed upgrade from Go 1.25.3 to Go 1.26.4
-- Updated `go.mod` to `go 1.26.4`
-- Updated `Dockerfile` to use `golang:1.26.4-alpine`
-- Verified static binary compilation still works
+### Current Focus
+**Go Version Upgrade**: Upgrading from Go 1.25.3 to Go 1.26.4
 
-## Recent Changes
-1. **Go 1.26.4 Upgrade** (2026-07-06)
-   - Upgraded to latest stable Go version
-   - No breaking changes encountered
-   - Docker build process unchanged
+### Completed Changes
+- ✅ Updated `go.mod` to `go 1.26.4`
+- ✅ Updated `Dockerfile` builder stage to `golang:1.26.4-alpine`
+- ✅ Memory Bank files created for project documentation
 
-2. **Memory Bank Creation** (2026-07-06)
-   - Creating 6 core Memory Bank files
-   - Documenting project structure and patterns
-   - Establishing documentation standards
+### Next Steps
+1. Verify build compatibility with Go 1.26.4
+2. Run tests (if any exist) with new Go version
+3. Test binary generation locally
+4. Update README.md version references if needed
+5. Consider updating GitHub Actions workflow Go version
 
-3. **Agent Files Exclusion** (2026-07-06)
-   - `.dockerignore` configured with agent exclusions
-   - Verified `.gitignore` does NOT exclude agent files
-   - Hook scripts updated to clarify .gitignore behavior
+### Active Decisions
+- **Go Version**: Moving to 1.26.4 for latest features and security patches
+- **Memory Bank**: Using structured documentation for cross-session context
+- **No Code Changes**: Upgrade is version-only, no API or logic modifications planned
 
-## Next Steps
-1. **Code Understanding**: Analyze how the code works
-   - Study `main.go` flow (CLI parsing, validation, orchestration)
-   - Study `html_generator.go` (JSON parsing, HTML generation)
-   - Understand Terraform plan JSON structure
+### Important Patterns
+- **Static Compilation**: `CGO_ENABLED=0` with `-ldflags='-w -s -extldflags "-static"'`
+- **Multi-Stage Docker**: Builder (Go) → Final (Alpine) for minimal image size
+- **Non-Root User**: Docker container runs as `appuser` (UID 1001)
+- **Flag Precedence**: `-o` takes precedence over `--output-html-path`
 
-2. **Potential Recoding**: Identify areas for improvement
-   - Code structure and organization
-   - Error handling patterns
-   - HTML generation approach
-   - Test coverage gaps
+### Project Insights
+- Module name is `cloudvic-tf-plan-viz` (not repository name)
+- Version format: `v1.0.2.06jul` (semantic + date component)
+- Supports both short and long flag forms for output path
+- HTML generation includes embedded CSS/JS for standalone operation
 
-3. **Testing Strategy**
-   - Unit tests for JSON parsing functions
-   - Integration tests with real Terraform plans
-   - Visual validation of generated HTML
-
-## Active Decisions
-- **Go Version**: Using latest stable (1.26.4) for performance and security
-- **Dependencies**: Keeping zero external dependencies (stdlib only)
-- **Distribution**: Maintaining all three methods (binary, Docker, GitHub Action)
-
-## Important Patterns
-- **Input Validation**: Always validate input file exists and is readable
-- **Error Handling**: Clear error messages with context
-- **HTML Generation**: Embedded CSS/JS for single-file output
-- **Color Coding**: Consistent action colors (green/orange/red)
-
-## Project Insights
-- Terraform plan JSON structure is standardized across providers
-- Interactive HTML features (collapsible sections) improve usability
-- Static binary compilation critical for portability
-- CI/CD integration is primary use case
+### Open Questions
+- Are there Go 1.26-specific features to leverage?
+- Should GitHub Actions workflow Go version be updated?
+- Any compatibility concerns with Terraform JSON format changes?

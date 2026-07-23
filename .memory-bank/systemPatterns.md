@@ -1,76 +1,50 @@
-# System Patterns
+## System Patterns
 
-## Architecture Overview
-
+### Architecture Overview
 ```
-┌─────────────────┐
-│ Terraform Plan  │
-│   (JSON file)   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   main.go       │
-│ - Parse flags   │
-│ - Validate input│
-│ - Orchestrate   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ html_generator  │
-│ - Parse JSON    │
-│ - Extract data  │
-│ - Generate HTML │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Interactive HTML│
-│ - Collapsible   │
-│ - Color-coded   │
-│ - Searchable    │
-└─────────────────┘
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Terraform CLI  │────▶│  Plan Visualizer  │────▶│  Interactive    │
+│  (show -json)   │     │  (Go Binary)      │     │  HTML Output    │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+       JSON                    Processing               CSS/JS
 ```
 
-## Core Components
+### Core Components
 
-### 1. main.go - CLI Entry Point
-**Purpose**: Command-line interface and orchestration
+#### 1. CLI Entry Point (`main.go`)
+- **Responsibility**: Flag parsing, input validation, orchestration
+- **Key Functions**:
+  - `main()`: CLI flag handling
+  - `validateInput()`: File existence and readability checks
+  - `processPlanFile()`: End-to-end processing workflow
+  - `readJSONFile()` / `writeHtmlFile()`: File I/O
+  - `showVersionInfo()` / `showHelpInfo()`: User information
 
-**Key Functions**:
-- `main()` - Parse CLI flags (`-i`, `-o`, `-v`, `-h`)
-- `validateInput()` - Verify input file exists and is readable
-- `processPlanFile()` - Read JSON, call generator, write HTML
-- `readJSONFile()` - File I/O for JSON input
-- `writeHtmlFile()` - File I/O for HTML output
+#### 2. HTML Generator (`html_generator.go`)
+- **Responsibility**: Parse Terraform plan JSON, generate HTML visualization
+- **Key Functions**:
+  - `generateHtml()`: Main HTML template with embedded CSS/JS
+  - `extractResourceChanges()`: Parse `resource_changes` array from JSON
+  - `countDriftChanges()`: Identify resources with drift (excludes replace)
+  - `generateResourceChangesHtml()`: Render change sections
+  - `generateDriftHtml()`: Render drift detection with diffs
+  - `getDriftDetails()` / `getChangeDetails()`: Before/after attribute diffs
+  - `getActionClass()`: Map actions to CSS classes
 
-**Flow**:
-```
-User runs CLI → Parse flags → Validate input → Read JSON → Generate HTML → Write output
-```
+### Data Flow
+1. **Input**: Terraform plan JSON (`terraform show -json`)
+2. **Parsing**: Go `encoding/json` unmarshals to `interface{}`
+3. **Extraction**: `extractResourceChanges()` processes `resource_changes` array
+4. **Classification**: Group by action type (create/update/delete/replace)
+5. **Rendering**: HTML template with embedded styling
+6. **Output**: Self-contained HTML file
 
-### 2. html_generator.go - Core Logic
-**Purpose**: Transform Terraform plan JSON into interactive HTML
-
-**Key Functions**:
-- `generateHtml()` - Main HTML template with embedded CSS/JS
-- `extractResourceChanges()` - Parse `resource_changes` array from JSON
-- `countDriftChanges()` - Detect resources with drift metadata
-- `generateResourceChangesHtml()` - Render each resource change section
-- `getActionClass()` - Map actions to CSS classes (create/update/delete)
-- `formatChangedFields()` - Show before/after attribute differences
-
-**Terraform Plan JSON Structure**:
+### Key Terraform JSON Structure
 ```json
 {
   "format_version": "1.2",
   "terraform_version": "1.5.7",
-  "planned_values": {
-    "root_module": {
-      "resources": [...]
-    }
-  },
+  "planned_values": { "root_module": { "resources": [...] } },
   "resource_changes": [
     {
       "address": "aws_instance.web",
@@ -88,107 +62,34 @@ User runs CLI → Parse flags → Validate input → Read JSON → Generate HTML
 }
 ```
 
-## Design Patterns
+### Build Patterns
 
-### 1. Pipeline Pattern
-```
-Input → Validation → Processing → Output
-```
-Each stage is independent and testable.
-
-### 2. Template Pattern
-HTML generation uses a single template function with embedded CSS/JS for portability.
-
-### 3. Strategy Pattern
-Different distribution methods (binary, Docker, GitHub Action) use the same core logic.
-
-### 4. Fail-Fast Pattern
-Validate input early, fail with clear error messages before processing.
-
-## Component Relationships
-
-```
-main.go
-  ├── Validates user input
-  ├── Reads JSON file
-  └── Calls html_generator.go
-
-html_generator.go
-  ├── Parses Terraform JSON
-  ├── Extracts resource changes
-  ├── Generates HTML structure
-  └── Embeds CSS/JS for interactivity
-```
-
-## Critical Implementation Paths
-
-### 1. JSON Parsing Path
-```
-terraform show -json → Read file → Parse JSON → Extract resource_changes → Map to structs
-```
-
-### 2. HTML Generation Path
-```
-Resource structs → Generate HTML sections → Embed CSS classes → Add JavaScript → Write file
-```
-
-### 3. Error Handling Path
-```
-File not found → Clear error message → Exit code 1
-Invalid JSON → Parse error details → Exit code 1
-Write failure → Permission error → Exit code 1
-```
-
-## Key Technical Decisions
-
-### 1. Zero External Dependencies
-**Decision**: Use only Go standard library
-**Rationale**: 
-- Simplifies distribution (no `go mod download`)
-- Reduces security vulnerabilities
-- Improves build reproducibility
-- Faster compilation
-
-### 2. Static Binary Compilation
-**Decision**: Compile with `CGO_ENABLED=0` and `-extldflags "-static"`
-**Rationale**:
-- No runtime dependencies
-- Works on any Linux system
-- Easy to distribute via GitHub releases
-- ~15MB binary size acceptable
-
-### 3. Embedded CSS/JS
-**Decision**: Single HTML file with embedded styles and scripts
-**Rationale**:
-- No external file dependencies
-- Easy to share and archive
-- Works offline
-- Simpler deployment
-
-### 4. Color-Coded Actions
-**Decision**: Green (create), Orange (update), Red (delete)
-**Rationale**:
-- Universal visual language
-- Quick scanning
-- Accessibility (color + icons)
-- Industry standard (Terraform uses same)
-
-## Code Flow Example
-
-**User Command**:
+#### Static Binary Build
 ```bash
-./terraform-plan-visualizer -i plan.json -o report.html
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -o terraform-plan-visualizer .
 ```
+- **CGO_ENABLED=0**: No C dependencies
+- **-ldflags='-w -s'**: Strip debug info and symbol table
+- **-extldflags "-static"**: Static linking
+- **-a**: Force rebuilding of packages
 
-**Execution Flow**:
-1. `main()` parses `-i` and `-o` flags
-2. `validateInput("plan.json")` checks file exists
-3. `readJSONFile("plan.json")` loads JSON into memory
-4. `generateHtml(jsonData)` processes plan:
-   - Extract `resource_changes` array
-   - Group by action type (create/update/delete)
-   - Generate HTML sections for each resource
-   - Add CSS classes based on action
-   - Embed interactive JavaScript
-5. `writeHtmlFile("report.html", html)` writes output
-6. User opens `report.html` in browser
+#### Docker Multi-Stage Build
+- **Stage 1 (builder)**: Go 1.26.4 Alpine, compiles binary
+- **Stage 2 (final)**: Alpine 3.18, copies binary, sets non-root user
+- **Result**: Minimal runtime image (~15-20MB)
+
+### Change Type Visualization
+- **Create** (green): New resources
+- **Update** (orange): Modified resources
+- **Delete** (red): Removed resources
+- **Replace** (gradient red-green): Recreated resources
+- **Drift** (orange): Infrastructure changed outside Terraform
+
+### HTML Output Structure
+- Embedded CSS in `<style>` block
+- Embedded JavaScript in `<script>` block
+- Collapsible sections with toggle buttons
+- Side-by-side diffs for before/after comparisons
+- No external dependencies

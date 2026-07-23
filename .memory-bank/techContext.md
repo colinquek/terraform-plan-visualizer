@@ -1,235 +1,116 @@
-# Technical Context
+## Technical Context
 
-## Technologies
+### Technologies
 
-### Go 1.26.4
-**Purpose**: Primary programming language
-**Version**: 1.26.4 (upgraded from 1.25.3 on 2026-07-06)
-**Key Features Used**:
-- Standard library only (`encoding/json`, `html/template`, `os`, `fmt`)
-- Static compilation with `CGO_ENABLED=0`
-- Cross-platform binary generation
+#### Go (Golang)
+- **Current Version**: 1.26.4 (upgrading from 1.25.3)
+- **Module**: `cloudvic-tf-plan-viz`
+- **Key Packages**:
+  - `encoding/json`: JSON parsing
+  - `flag`: CLI flag parsing
+  - `os`: File I/O
+  - `fmt`: Formatted I/O
+  - `runtime`: Version/platform info
 
-**Build Command**:
-```bash
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
-    -a -o terraform-plan-visualizer .
-```
+#### Docker
+- **Builder Image**: `golang:1.26.4-alpine`
+- **Runtime Image**: `alpine:3.18`
+- **Build Strategy**: Multi-stage for minimal image size
+- **Security**: Non-root user (UID 1001, GID 1001)
 
-### Docker (Multi-Stage Build)
-**Purpose**: Containerized distribution
-**Base Images**:
-- Build stage: `golang:1.26.4-alpine`
-- Runtime stage: `alpine:3.18`
+#### Terraform
+- **Expected Input**: `terraform show -json` output
+- **Format Version**: 1.2 (current standard)
+- **Compatibility**: All providers using standard JSON format
 
-**Build Process**:
-```dockerfile
-FROM golang:1.26.4-alpine AS builder
-COPY . /app
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags='-w -s' -a -o terraform-plan-visualizer .
+### Development Setup
 
-FROM alpine:3.18
-COPY --from=builder /app/terraform-plan-visualizer /usr/local/bin/
-USER 1000:1000
-ENTRYPOINT ["/usr/local/bin/terraform-plan-visualizer"]
-```
-
-**Final Image Size**: ~15MB
-
-### GitHub Actions
-**Purpose**: CI/CD integration
-**Action Definition**: `action.yml`
-**Inputs**:
-- `plan-file`: Path to Terraform plan JSON
-- `output-file`: Path for generated HTML
-- `upload-artifact`: Boolean to upload as workflow artifact
-
-**Usage**:
-```yaml
-- name: Generate Visualization
-  uses: cloudvic-org/terraform-plan-visualizer@v1
-  with:
-    plan-file: terraform/plan.json
-    output-file: plan-visualization.html
-    upload-artifact: true
-```
-
-## Development Setup
-
-### Prerequisites
+#### Prerequisites
 - Go 1.26.4 or later
+- Git (for version info)
 - Docker (optional, for container builds)
-- Terraform (for generating test plans)
 
-### Build Commands
-
-**Local Development**:
+#### Build Commands
 ```bash
+# Local development
 go build -o terraform-plan-visualizer .
-```
 
-**Production Binary**:
-```bash
+# Production static binary
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags='-w -s -extldflags "-static"' \
     -a -o terraform-plan-visualizer .
-```
 
-**Docker Image**:
-```bash
+# Docker image
 docker build -t terraform-plan-visualizer .
 ```
 
-### Testing Workflow
-
-1. **Generate Terraform Plan**:
+#### Testing Workflow
 ```bash
+# Generate plan JSON
 cd terraform/
 terraform init
 terraform plan -out=plan.tfplan
 terraform show -json plan.tfplan > plan.json
-```
 
-2. **Run Visualizer**:
-```bash
+# Run visualizer
 ../terraform-plan-visualizer -i plan.json -o visualization.html
-```
 
-3. **Open in Browser**:
-```bash
-open visualization.html  # macOS
+# Open in browser
 xdg-open visualization.html  # Linux
-start visualization.html  # Windows
+open visualization.html      # macOS
 ```
 
-## Technical Constraints
+### Technical Constraints
 
-### 1. Go Version Compatibility
-- Minimum: Go 1.26.4
-- No backward compatibility guarantees
-- Latest stable version recommended
+#### Go Version
+- **Minimum**: Go 1.26.4 (after upgrade)
+- **Reason**: Latest features, security patches, performance improvements
+- **Impact**: Docker build, local development, CI/CD runners
 
-### 2. Terraform Plan Format
-- Requires `terraform show -json` output
-- Must match Terraform JSON plan format version 1.0+
-- Supports all providers using standard format
+#### Static Compilation
+- **CGO Disabled**: No C library dependencies
+- **Static Linking**: Binary must be fully static
+- **Platform**: Linux amd64 primary target
 
-### 3. File System
-- Input/output paths are relative to working directory
-- Requires read permission on input file
-- Requires write permission on output directory
+#### Docker
+- **Base Image**: Alpine 3.18 (small footprint)
+- **User**: Non-root required for security
+- **Entrypoint**: Single binary with flags
 
-### 4. Browser Compatibility
-- Modern browsers (Chrome, Firefox, Safari, Edge)
-- JavaScript required for interactive features
-- No IE support
+### Dependencies
 
-## Dependencies
+#### Go Modules
+- Check `go.mod` and `go.sum` for current dependencies
+- Minimal external dependencies (stdlib-focused)
 
-### Runtime Dependencies
-**None** - Static binary with zero external dependencies
+#### Runtime Dependencies
+- **Binary**: None (fully static)
+- **Docker**: ca-certificates, tzdata (included in image)
+- **GitHub Action**: Docker or Node.js runner
 
-### Build Dependencies
-- Go 1.26.4+ compiler
-- Standard library packages:
-  - `encoding/json` - JSON parsing
-  - `fmt` - Formatted I/O
-  - `io` - I/O utilities
-  - `os` - File operations
-  - `path/filepath` - Path manipulation
-  - `strings` - String manipulation
+### Tool Usage Patterns
 
-### Test Dependencies
-- Terraform CLI (for generating test plans)
-- Web browser (for visual validation)
+#### CLI Flags
+- `-i` / `-input`: Input JSON file (required)
+- `-o` / `-output`: Output HTML file (default: index.html)
+- `--output-html-path`: Alternative output flag
+- `-v` / `-version`: Show version info
+- `-h` / `-help`: Show help
 
-## Tool Usage Patterns
+#### Version Management
+- Version string: `v1.0.2.06jul`
+- Set via ldflags during build:
+  ```bash
+  -ldflags="-X main.Version=v1.0.2.06jul -X main.BuildTime=... -X main.GitCommit=..."
+  ```
 
-### CLI Flags
-```bash
-# Basic usage
-./terraform-plan-visualizer -i plan.json -o report.html
+### CI/CD Integration
 
-# Show version
-./terraform-plan-visualizer -v
+#### GitHub Actions
+- Action: `cloudvic-org/terraform-plan-visualizer@v1`
+- Inputs: `plan-file`, `output-file`, `upload-artifact`
+- Runner: Ubuntu latest
 
-# Show help
-./terraform-plan-visualizer -h
-```
-
-### Docker Usage
-```bash
-docker run --rm -v $(pwd):/workspace \
-  ghcr.io/cloudvic-org/terraform-plan-visualizer:latest \
-  -i /workspace/plan.json -o /workspace/visualization.html
-```
-
-### GitHub Actions Usage
-```yaml
-- name: Generate Terraform Plan Visualization
-  uses: cloudvic-org/terraform-plan-visualizer@v1
-  with:
-    plan-file: terraform/plan.json
-    output-file: plan-visualization.html
-    upload-artifact: true
-```
-
-## File Structure
-
-```
-terraform-plan-visualizer/
-├── main.go                    # CLI entry point
-├── html_generator.go          # HTML generation logic
-├── Dockerfile                 # Multi-stage build
-├── entrypoint.sh              # GitHub Action entrypoint
-├── action.yml                 # GitHub Action definition
-├── go.mod                     # Go module (Go 1.26.4)
-├── go.sum                     # Dependency checksums
-├── scripts/                   # Build script
-│   └── build.sh              # Build script
-├── examples/                  # Sample plans and outputs
-│   ├── complex-modules-example-plan.json
-│   ├── create-and-update-example-plan.json
-│   └── replace-example-plan.json
-└── .dockerignore              # Agent exclusions
-```
-
-## Performance Characteristics
-
-### Binary Size
-- Development build: ~20MB
-- Production build (stripped): ~15MB
-- Docker image: ~18MB
-
-### Execution Time
-- Small plans (<50 resources): <100ms
-- Medium plans (50-200 resources): 100-500ms
-- Large plans (200+ resources): 500ms-2s
-
-### Memory Usage
-- Typical: <50MB RAM
-- Large plans: <200MB RAM
-- No goroutines (single-threaded)
-
-## Security Considerations
-
-### 1. File I/O
-- Validates input file exists before reading
-- No shell command execution
-- No network access
-
-### 2. JSON Parsing
-- Uses safe `encoding/json` package
-- No dynamic code execution
-- Handles malformed JSON gracefully
-
-### 3. Docker Security
-- Non-root user (UID 1000)
-- Minimal Alpine base image
-- No unnecessary packages
-
-### 4. Supply Chain
-- Zero external dependencies
-- No third-party libraries
-- Reproducible builds
+#### Docker Registry
+- Image: `ghcr.io/cloudvic-org/terraform-plan-visualizer:latest`
+- Tagging: Semantic versioning + `latest`
