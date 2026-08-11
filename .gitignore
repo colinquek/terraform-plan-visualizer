@@ -99,3 +99,6 @@ plan.json
 # Docker
 .dockerignore
 **/diag.html
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
