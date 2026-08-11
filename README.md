@@ -1,5 +1,5 @@
 # Terraform Plan Visualizer
-in windows
+
 A free, open source Terraform plan visualization tool that converts Terraform plan JSON files into succinct, interactive HTML pages. Perfect for sharing plan results in CI/CD pipelines, pull requests, and team collaboration.
 
 **Current Version:** v1.0.2.06jul
